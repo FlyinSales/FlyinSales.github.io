@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlyinSales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-6bZx6m9Oq8lE9rG9bTg7R3nWc19t0fS9wF3Z5mN3a6z3o8I7n3G8c6nJX8M2mQf3r3x0hS9kQqv3y0l1G5Q2xw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">🦅</span>
+        <h1>FlyinSales</h1>
+      </div>
+
+      <div class="actions flex items-center gap-2 flex-wrap">
+        <button id="addSquadBtn" class="btn primary px-3 py-2 text-sm rounded-lg shadow-sm">+ Nueva cuadrilla</button>
+        <div class="search flex items-center gap-2">
+          <input id="searchNumber" class="input w-44" placeholder="Buscar N° venta" />
+          <input id="searchSeller" class="input w-52" placeholder="Buscar vendedor" />
+        </div>
+
+        <div class="split inline-flex gap-2">
+          <button id="downloadPdfBtn" class="btn px-3 py-2 text-sm rounded-lg">Descargar PDF</button>
+        </div>
+
+        <button id="clearAllBtn" class="btn danger px-3 py-2 text-sm rounded-lg">Limpiar todo</button>
+        <button id="reportIssueBtn" class="btn px-3 py-2 text-sm rounded-lg">Reportar un problema</button>
+      </div>
+
+      <div class="totals">
+        <div class="total-box">
+          <span>Total General</span>
+          <strong id="grandTotal">$ 0,00</strong>
+          <small>(no cuenta filas tachadas)</small>
+        </div>
+      </div>
+    </header>
+
+    <main id="app" class="container space-y-6">
+      <!-- Las cuadrillas se renderizan aquí -->
+    </main>
+
+    <template id="squadTemplate">
+      <section class="squad" data-squad-id="">
+        <div class="squad-header">
+          <div class="header-main">
+            <div class="title-group">
+              <label>Nombre</label>
+              <input class="squad-name" placeholder="Ej. Venta Mayorista #1" />
+            </div>
+            <span class="status-badge status-none">Sin estado</span>
+          </div>
+          <div class="header-meta">
+            <div class="field">
+              <label>Fecha inicio</label>
+              <input class="squad-meta" type="date" />
+            </div>
+            <div class="field">
+              <label>Responsable / Equipo</label>
+              <input class="squad-meta" placeholder="Nombre del responsable" />
+            </div>
+            <div class="squad-header-actions">
+              <button class="btn ghost add-item">+ Agregar fila</button>
+              <button class="btn ghost delete-squad">Eliminar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Datos de la venta</div>
+          <div class="squad-details form-grid">
+            <div class="field"><label>Cliente</label><input class="detail client" placeholder="Cliente" /></div>
+            <div class="field"><label>Número de venta</label><input class="detail number" placeholder="Ej. 000123" /></div>
+            <div class="field"><label>Correo</label><input class="detail email" type="email" placeholder="cliente@correo.com" /></div>
+            <div class="field"><label>Sucursal</label><input class="detail branch" placeholder="Sucursal" /></div>
+            <div class="field"><label>Tipo de pago</label>
+              <select class="detail payment">
+                <option value="">Seleccionar...</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="credito">Crédito</option>
+              </select>
+            </div>
+            <div class="field"><label>Cuotas</label><input class="detail installments" placeholder="Opcional: cuotas, plazo fijo, etc." /></div>
+            <div class="field"><label>Vendedor</label><input class="detail seller" placeholder="Vendedor" /></div>
+            <div class="field"><label>Supervisor</label><input class="detail supervisor" placeholder="Supervisor" /></div>
+            <div class="field"><label>Estado de venta</label>
+              <select class="detail status">
+                <option value="">Seleccionar...</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+            <div class="field"><label>Fecha de entrega</label><input class="detail end-date" type="date" /></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Detalle de ítems</div>
+          <div class="table">
+            <div class="table-head">
+              <div class="col done-col"></div>
+              <div class="col desc-col">Descripción</div>
+              <div class="col">Modelo</div>
+              <div class="col">Serie/SKU</div>
+              <div class="col num-col">Cantidad</div>
+              <div class="col num-col">Precio Unitario</div>
+              <div class="col num-col">Subtotal</div>
+              <div class="col act-col"></div>
+            </div>
+            <div class="table-body"></div>
+          </div>
+        </div>
+
+        <div class="squad-footer">
+          <div class="spacer"></div>
+          <div class="squad-total">
+            <span>Total</span>
+            <strong class="squad-total-value">$ 0,00</strong>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template id="rowTemplate">
+      <div class="row" data-item-id="">
+        <div class="col done-col">
+          <input type="checkbox" class="item-done" title="Tachar fila (no suma al total)" />
+        </div>
+        <div class="col desc-col">
+          <input class="input desc" placeholder="Detalle de la venta / producto / servicio" />
+        </div>
+        <div class="col">
+          <input class="input model" placeholder="Modelo" />
+        </div>
+        <div class="col">
+          <input class="input sku" placeholder="Serie o SKU" />
+        </div>
+        <div class="col num-col">
+          <input class="input qty" type="number" step="1" min="0" placeholder="0" />
+        </div>
+        <div class="col num-col">
+          <input class="input price" type="number" step="0.01" min="0" placeholder="0.00" />
+        </div>
+        <div class="col num-col subtotal">$ 0,00</div>
+        <div class="col act-col">
+          <button class="icon-btn delete-item" title="Eliminar fila">🗑️</button>
+        </div>
+      </div>
+    </template>
+    <button id="backToTopBtn" class="fab-top is-hidden" title="Volver arriba">↑</button>
+
+    <!-- Modal Reportar un problema -->
+    <div id="reportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+      <div class="modal-backdrop"></div>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="reportTitle">Reportar un problema</h3>
+          <button id="closeReportModal" class="icon-btn" title="Cerrar">✕</button>
+        </div>
+        <div class="modal-body form-grid">
+          <div class="field">
+            <label>Fecha</label>
+            <input id="reportDate" type="date" />
+          </div>
+          <div class="field">
+            <label>Tu nombre</label>
+            <input id="reportName" placeholder="Nombre y apellido" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Descripción del error</label>
+            <textarea id="reportDesc" class="textarea" rows="5" placeholder="Describe el problema..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="submitReportBtn" class="btn primary px-3 py-2 text-sm rounded-lg">Enviar reclamo</button>
+          <button id="cancelReportBtn" class="btn px-3 py-2 text-sm rounded-lg">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+  </html>
